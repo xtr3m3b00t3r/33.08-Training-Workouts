@@ -3,10 +3,14 @@ from datetime import datetime
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
 from flask_sqlalchemy import SQLAlchemy
 import markdown
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-key-for-testing')
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///workouts.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///workouts.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
@@ -134,26 +138,30 @@ def init_db():
         # Check if workouts already exist
         if Workout.query.count() == 0:
             # Load workout A
-            with open('workout-a-revised.md', 'r') as f:
-                workout_a_content = f.read()
-            
-            workout_a = Workout(
-                name='Workout A: 3/7 Method',
-                content=workout_a_content
-            )
-            
-            # Load workout B
-            with open('workout-b.md', 'r') as f:
-                workout_b_content = f.read()
-            
-            workout_b = Workout(
-                name='Workout B: 3/7 Method',
-                content=workout_b_content
-            )
-            
-            db.session.add(workout_a)
-            db.session.add(workout_b)
-            db.session.commit()
+            try:
+                with open('workout-a-revised.md', 'r') as f:
+                    workout_a_content = f.read()
+                
+                workout_a = Workout(
+                    name='Workout A: 3/7 Method',
+                    content=workout_a_content
+                )
+                
+                # Load workout B
+                with open('workout-b.md', 'r') as f:
+                    workout_b_content = f.read()
+                
+                workout_b = Workout(
+                    name='Workout B: 3/7 Method',
+                    content=workout_b_content
+                )
+                
+                db.session.add(workout_a)
+                db.session.add(workout_b)
+                db.session.commit()
+            except Exception as e:
+                print(f"Error loading workout files: {e}")
+                # In production, we might want to load from a different source
 
 if __name__ == '__main__':
     init_db()
