@@ -72,6 +72,35 @@
                                     </div>
                                 </div>
                                 
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Machine Weight</label>
+                                        <input type="text" class="form-control" name="machine_weight[]" placeholder="e.g., 40kg each side">
+                                    </div>
+                                    
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Free Weight</label>
+                                        <input type="text" class="form-control" name="free_weight[]" placeholder="e.g., 47.5kg total">
+                                    </div>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Rest Time</label>
+                                        <input type="text" class="form-control" name="rest_time[]" placeholder="e.g., 20-30 seconds between sets">
+                                    </div>
+                                    
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Rep Scheme</label>
+                                        <input type="text" class="form-control" name="rep_scheme[]" placeholder="e.g., 3, 4, 5, 6, 7 reps">
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Form Cues</label>
+                                    <textarea class="form-control" name="form_cues[]" rows="2" placeholder="e.g., Chest up, knees tracking over toes, proper depth"></textarea>
+                                </div>
+                                
                                 <div class="mb-3">
                                     <label class="form-label">Notes</label>
                                     <textarea class="form-control" name="exercise_notes[]" rows="2" placeholder="Any specific instructions or notes for this exercise"></textarea>
@@ -124,6 +153,35 @@
                 </div>
             </div>
             
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Machine Weight</label>
+                    <input type="text" class="form-control" name="machine_weight[]" placeholder="e.g., 40kg each side">
+                </div>
+                
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Free Weight</label>
+                    <input type="text" class="form-control" name="free_weight[]" placeholder="e.g., 47.5kg total">
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Rest Time</label>
+                    <input type="text" class="form-control" name="rest_time[]" placeholder="e.g., 20-30 seconds between sets">
+                </div>
+                
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Rep Scheme</label>
+                    <input type="text" class="form-control" name="rep_scheme[]" placeholder="e.g., 3, 4, 5, 6, 7 reps">
+                </div>
+            </div>
+            
+            <div class="mb-3">
+                <label class="form-label">Form Cues</label>
+                <textarea class="form-control" name="form_cues[]" rows="2" placeholder="e.g., Chest up, knees tracking over toes, proper depth"></textarea>
+            </div>
+            
             <div class="mb-3">
                 <label class="form-label">Notes</label>
                 <textarea class="form-control" name="exercise_notes[]" rows="2" placeholder="Any specific instructions or notes for this exercise"></textarea>
@@ -143,9 +201,15 @@ document.addEventListener('DOMContentLoaded', function() {
     const contentEditor = document.getElementById('content');
     const contentPreview = document.querySelector('.content-preview');
     
+    // Track if the user has manually edited the content
+    let userHasEditedContent = false;
+    
     // Add exercise button click handler
     addExerciseBtn.addEventListener('click', function() {
         addExerciseItem();
+        if (!userHasEditedContent) {
+            updateContentFromFields();
+        }
     });
     
     // Function to add a new exercise item
@@ -155,6 +219,19 @@ document.addEventListener('DOMContentLoaded', function() {
         // Add event listener to remove button
         exerciseItem.querySelector('.remove-exercise-btn').addEventListener('click', function() {
             this.closest('.exercise-item').remove();
+            if (!userHasEditedContent) {
+                updateContentFromFields();
+            }
+        });
+        
+        // Add event listeners to all input fields in the new exercise
+        const inputs = exerciseItem.querySelectorAll('input, textarea');
+        inputs.forEach(input => {
+            input.addEventListener('input', function() {
+                if (!userHasEditedContent) {
+                    updateContentFromFields();
+                }
+            });
         });
         
         exercisesContainer.appendChild(exerciseItem);
@@ -164,7 +241,26 @@ document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('.remove-exercise-btn').forEach(button => {
         button.addEventListener('click', function() {
             this.closest('.exercise-item').remove();
+            if (!userHasEditedContent) {
+                updateContentFromFields();
+            }
         });
+    });
+    
+    // Add event listeners to all existing input fields
+    document.querySelectorAll('#exercises-container input, #exercises-container textarea').forEach(input => {
+        input.addEventListener('input', function() {
+            if (!userHasEditedContent) {
+                updateContentFromFields();
+            }
+        });
+    });
+    
+    // Also listen for changes to the workout name
+    document.getElementById('workout_name').addEventListener('input', function() {
+        if (!userHasEditedContent) {
+            updateContentFromFields();
+        }
     });
     
     // Function to update the preview
@@ -180,8 +276,11 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize preview
     updatePreview();
     
-    // Update preview on input
-    contentEditor.addEventListener('input', updatePreview);
+    // Update preview on input and track user edits
+    contentEditor.addEventListener('input', function() {
+        userHasEditedContent = true;
+        updatePreview();
+    });
     
     // Helper function to generate markdown content from form fields
     function generateMarkdownContent() {
@@ -196,13 +295,42 @@ document.addEventListener('DOMContentLoaded', function() {
         
         exerciseItems.forEach((item, index) => {
             const exerciseName = item.querySelector('.exercise-name').value;
+            if (!exerciseName) return; // Skip empty exercises
+            
             const targetSets = item.querySelector('input[name="target_sets[]"]').value;
             const targetReps = item.querySelector('input[name="target_reps[]"]').value;
+            const machineWeight = item.querySelector('input[name="machine_weight[]"]').value;
+            const freeWeight = item.querySelector('input[name="free_weight[]"]').value;
+            const restTime = item.querySelector('input[name="rest_time[]"]').value;
+            const repScheme = item.querySelector('input[name="rep_scheme[]"]').value;
+            const formCues = item.querySelector('textarea[name="form_cues[]"]').value;
             const notes = item.querySelector('textarea[name="exercise_notes[]"]').value;
             
             content += `### ${index + 1}. ${exerciseName}\n\n`;
+            
+            if (machineWeight) {
+                content += `- **Machine:** ${machineWeight}\n`;
+            }
+            
+            if (freeWeight) {
+                content += `- **Free Weight:** ${freeWeight}\n`;
+            }
+            
             content += `- **Sets:** ${targetSets}\n`;
-            content += `- **Reps:** ${targetReps}\n`;
+            
+            if (repScheme) {
+                content += `- **Rep Scheme:** ${repScheme}\n`;
+            } else {
+                content += `- **Reps:** ${targetReps}\n`;
+            }
+            
+            if (restTime) {
+                content += `- **Rest:** ${restTime}\n`;
+            }
+            
+            if (formCues) {
+                content += `- **Form Cues:** ${formCues}\n`;
+            }
             
             if (notes) {
                 content += `- **Notes:** ${notes}\n`;
@@ -214,21 +342,24 @@ document.addEventListener('DOMContentLoaded', function() {
         return content;
     }
     
+    // Function to update content field from exercise fields
+    function updateContentFromFields() {
+        contentEditor.value = generateMarkdownContent();
+        updatePreview();
+    }
+    
     // Update content field with exercise data when form is submitted
     document.getElementById('workoutForm').addEventListener('submit', function(e) {
-        // If the user has edited the content directly, respect their changes
-        // If they've only modified the exercise fields, update the content
-        const hasEditedContent = contentEditor.dataset.userEdited === 'true';
-        
-        if (!hasEditedContent) {
+        // Always update the content field before submitting
+        if (!userHasEditedContent) {
             contentEditor.value = generateMarkdownContent();
         }
     });
     
-    // Track if the user has manually edited the content
-    contentEditor.addEventListener('input', function() {
-        contentEditor.dataset.userEdited = 'true';
-    });
+    // Initial content generation if no content exists
+    if (!contentEditor.value.trim()) {
+        updateContentFromFields();
+    }
 });
 </script>
 {% endblock %}

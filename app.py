@@ -202,6 +202,11 @@ def add_workout():
         exercise_names = request.form.getlist('exercise_names[]')
         target_sets = request.form.getlist('target_sets[]')
         target_reps = request.form.getlist('target_reps[]')
+        machine_weight = request.form.getlist('machine_weight[]')
+        free_weight = request.form.getlist('free_weight[]')
+        rest_time = request.form.getlist('rest_time[]')
+        rep_scheme = request.form.getlist('rep_scheme[]')
+        form_cues = request.form.getlist('form_cues[]')
         exercise_notes = request.form.getlist('exercise_notes[]')
         
         # If content is not provided directly, generate it from the form fields
@@ -210,12 +215,30 @@ def add_workout():
             for i, exercise in enumerate(exercise_names):
                 if exercise.strip():
                     content += f"### {i+1}. {exercise.strip()}\n\n"
+                    
+                    if i < len(machine_weight) and machine_weight[i].strip():
+                        content += f"- **Machine:** {machine_weight[i].strip()}\n"
+                    
+                    if i < len(free_weight) and free_weight[i].strip():
+                        content += f"- **Free Weight:** {free_weight[i].strip()}\n"
+                    
                     if i < len(target_sets):
                         content += f"- **Sets:** {target_sets[i]}\n"
-                    if i < len(target_reps):
+                    
+                    if i < len(rep_scheme) and rep_scheme[i].strip():
+                        content += f"- **Rep Scheme:** {rep_scheme[i].strip()}\n"
+                    elif i < len(target_reps):
                         content += f"- **Reps:** {target_reps[i]}\n"
+                    
+                    if i < len(rest_time) and rest_time[i].strip():
+                        content += f"- **Rest:** {rest_time[i].strip()}\n"
+                    
+                    if i < len(form_cues) and form_cues[i].strip():
+                        content += f"- **Form Cues:** {form_cues[i].strip()}\n"
+                    
                     if i < len(exercise_notes) and exercise_notes[i].strip():
                         content += f"- **Notes:** {exercise_notes[i].strip()}\n"
+                    
                     content += "\n"
         
         # Create new workout
@@ -243,6 +266,11 @@ def modify_workout(workout_id):
         exercise_names = request.form.getlist('exercise_names[]')
         target_sets = request.form.getlist('target_sets[]')
         target_reps = request.form.getlist('target_reps[]')
+        machine_weight = request.form.getlist('machine_weight[]')
+        free_weight = request.form.getlist('free_weight[]')
+        rest_time = request.form.getlist('rest_time[]')
+        rep_scheme = request.form.getlist('rep_scheme[]')
+        form_cues = request.form.getlist('form_cues[]')
         exercise_notes = request.form.getlist('exercise_notes[]')
         
         # If content is not provided directly, generate it from the form fields
@@ -251,12 +279,30 @@ def modify_workout(workout_id):
             for i, exercise in enumerate(exercise_names):
                 if exercise.strip():
                     content += f"### {i+1}. {exercise.strip()}\n\n"
+                    
+                    if i < len(machine_weight) and machine_weight[i].strip():
+                        content += f"- **Machine:** {machine_weight[i].strip()}\n"
+                    
+                    if i < len(free_weight) and free_weight[i].strip():
+                        content += f"- **Free Weight:** {free_weight[i].strip()}\n"
+                    
                     if i < len(target_sets):
                         content += f"- **Sets:** {target_sets[i]}\n"
-                    if i < len(target_reps):
+                    
+                    if i < len(rep_scheme) and rep_scheme[i].strip():
+                        content += f"- **Rep Scheme:** {rep_scheme[i].strip()}\n"
+                    elif i < len(target_reps):
                         content += f"- **Reps:** {target_reps[i]}\n"
+                    
+                    if i < len(rest_time) and rest_time[i].strip():
+                        content += f"- **Rest:** {rest_time[i].strip()}\n"
+                    
+                    if i < len(form_cues) and form_cues[i].strip():
+                        content += f"- **Form Cues:** {form_cues[i].strip()}\n"
+                    
                     if i < len(exercise_notes) and exercise_notes[i].strip():
                         content += f"- **Notes:** {exercise_notes[i].strip()}\n"
+                    
                     content += "\n"
         
         # Update workout details
