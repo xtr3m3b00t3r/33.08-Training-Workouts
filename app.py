@@ -24,7 +24,9 @@ def inject_now():
 class Workout(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
+    description = db.Column(db.Text, nullable=True)
     content = db.Column(db.Text, nullable=False)
+    exercises = db.Column(db.Text, nullable=True)
     sessions = db.relationship('Session', backref='workout', lazy=True)
 
 class Session(db.Model):
@@ -122,46 +124,185 @@ def complete_session(session_id):
     session = Session.query.get_or_404(session_id)
     return redirect(url_for('history'))
 
+@app.route('/delete_session/<int:session_id>')
+def delete_session(session_id):
+    session = Session.query.get_or_404(session_id)
+    db.session.delete(session)
+    db.session.commit()
+    flash('Workout session deleted successfully', 'success')
+    return redirect(url_for('history'))
+
 @app.route('/api/exercises/<int:workout_id>')
-def get_exercises(workout_id):
+def get_workout_exercises(workout_id):
     workout = Workout.query.get_or_404(workout_id)
-    # Parse markdown to extract exercise names
+    
+    # If exercises field is populated, use it
+    if workout.exercises:
+        return jsonify(workout.exercises.split(', '))
+    
+    # Otherwise, parse from content (for backward compatibility)
     import re
     exercises = re.findall(r'### \d+\.\s+(.*?)$', workout.content, re.MULTILINE)
     return jsonify(exercises)
+
+@app.route('/delete_exercise/<int:exercise_id>', methods=['POST'])
+def delete_exercise(exercise_id):
+    exercise = CompletedExercise.query.get_or_404(exercise_id)
+    db.session.delete(exercise)
+    db.session.commit()
+    return jsonify({"success": True})
+
+@app.route('/update_exercise/<int:exercise_id>', methods=['POST'])
+def update_exercise(exercise_id):
+    exercise = CompletedExercise.query.get_or_404(exercise_id)
+    data = request.json
+    
+    exercise.sets_completed = int(data.get('sets_completed', exercise.sets_completed))
+    
+    # Handle weight - could be None or a float
+    weight = data.get('weight')
+    if weight is not None and weight != '':
+        exercise.weight = float(weight)
+    else:
+        exercise.weight = None
+    
+    exercise.notes = data.get('notes', exercise.notes)
+    
+    db.session.commit()
+    return jsonify({"success": True})
+
+@app.route('/add_exercise_to_session/<int:session_id>', methods=['POST'])
+def add_exercise_to_session(session_id):
+    session = Session.query.get_or_404(session_id)
+    data = request.json
+    
+    # Create a new completed exercise
+    new_exercise = CompletedExercise(
+        session_id=session_id,
+        exercise_name=data.get('exercise_name'),
+        sets_completed=int(data.get('sets_completed')),
+        notes=data.get('notes', '')
+    )
+    
+    # Handle weight - could be None or a float
+    weight = data.get('weight')
+    if weight is not None and weight != '':
+        new_exercise.weight = float(weight)
+    
+    db.session.add(new_exercise)
+    db.session.commit()
+    
+    return jsonify({"success": True})
+
+@app.route('/add_workout', methods=['GET', 'POST'])
+def add_workout():
+    if request.method == 'POST':
+        workout_name = request.form.get('workout_name')
+        description = request.form.get('description', '')
+        exercise_names = request.form.getlist('exercise_names[]')
+        
+        # Format exercises as a comma-separated string
+        exercises_str = ', '.join([ex.strip() for ex in exercise_names if ex.strip()])
+        
+        # Generate markdown content from exercises
+        content = f"# {workout_name}\n\n{description}\n\n## Exercises\n\n"
+        for i, exercise in enumerate(exercise_names, 1):
+            if exercise.strip():
+                content += f"### {i}. {exercise.strip()}\n\n"
+        
+        # Create new workout
+        new_workout = Workout(
+            name=workout_name, 
+            description=description,
+            content=content,
+            exercises=exercises_str
+        )
+        
+        db.session.add(new_workout)
+        db.session.commit()
+        flash('Workout added successfully!', 'success')
+        return redirect(url_for('index'))
+    
+    return render_template('add_workout.html')
+
+@app.route('/modify_workout/<int:workout_id>', methods=['GET', 'POST'])
+def modify_workout(workout_id):
+    workout = Workout.query.get_or_404(workout_id)
+    
+    if request.method == 'POST':
+        workout_name = request.form.get('workout_name')
+        description = request.form.get('description', '')
+        exercise_names = request.form.getlist('exercise_names[]')
+        
+        # Format exercises as a comma-separated string
+        exercises_str = ', '.join([ex.strip() for ex in exercise_names if ex.strip()])
+        
+        # Generate markdown content from exercises
+        content = f"# {workout_name}\n\n{description}\n\n## Exercises\n\n"
+        for i, exercise in enumerate(exercise_names, 1):
+            if exercise.strip():
+                content += f"### {i}. {exercise.strip()}\n\n"
+        
+        # Update workout details
+        workout.name = workout_name
+        workout.description = description
+        workout.content = content
+        workout.exercises = exercises_str
+        
+        db.session.commit()
+        flash('Workout updated successfully!', 'success')
+        return redirect(url_for('index'))
+    
+    # Get exercises for this workout
+    exercises = []
+    if workout.exercises:
+        exercises = workout.exercises.split(', ')
+    else:
+        # Parse from content for backward compatibility
+        import re
+        exercises = re.findall(r'### \d+\.\s+(.*?)$', workout.content, re.MULTILINE)
+    
+    return render_template('modify_workout.html', workout=workout, exercises=exercises)
 
 # Initialize the database and load workout data
 def init_db():
     with app.app_context():
         db.create_all()
         
-        # Check if workouts already exist
+        # Only load initial data if the database is empty
         if Workout.query.count() == 0:
             # Load workout A
-            try:
-                with open('workout-a-revised.md', 'r') as f:
-                    workout_a_content = f.read()
+            with open('workouts/workout_a.md', 'r') as f:
+                workout_a_content = f.read()
                 
-                workout_a = Workout(
-                    name='Workout A: 3/7 Method',
-                    content=workout_a_content
-                )
+            # Parse exercises from content
+            import re
+            workout_a_exercises = re.findall(r'### \d+\.\s+(.*?)$', workout_a_content, re.MULTILINE)
+            workout_a_exercises_str = ', '.join(workout_a_exercises)
                 
-                # Load workout B
-                with open('workout-b.md', 'r') as f:
-                    workout_b_content = f.read()
+            workout_a = Workout(
+                name='Workout A: 3/7 Method',
+                content=workout_a_content,
+                exercises=workout_a_exercises_str
+            )
+            
+            # Load workout B
+            with open('workouts/workout_b.md', 'r') as f:
+                workout_b_content = f.read()
                 
-                workout_b = Workout(
-                    name='Workout B: 3/7 Method',
-                    content=workout_b_content
-                )
+            # Parse exercises from content
+            workout_b_exercises = re.findall(r'### \d+\.\s+(.*?)$', workout_b_content, re.MULTILINE)
+            workout_b_exercises_str = ', '.join(workout_b_exercises)
                 
-                db.session.add(workout_a)
-                db.session.add(workout_b)
-                db.session.commit()
-            except Exception as e:
-                print(f"Error loading workout files: {e}")
-                # In production, we might want to load from a different source
+            workout_b = Workout(
+                name='Workout B: 3/7 Method',
+                content=workout_b_content,
+                exercises=workout_b_exercises_str
+            )
+            
+            db.session.add(workout_a)
+            db.session.add(workout_b)
+            db.session.commit()
 
 if __name__ == '__main__':
     init_db()
