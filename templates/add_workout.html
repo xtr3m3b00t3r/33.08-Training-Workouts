@@ -21,16 +21,63 @@
                         <input type="text" class="form-control" id="workout_name" name="workout_name" required>
                     </div>
                     
-                    <div class="mb-3">
-                        <label for="description" class="form-label">Description</label>
-                        <textarea class="form-control" id="description" name="description" rows="3" placeholder="Describe your workout routine"></textarea>
+                    <!-- Markdown Editor and Preview -->
+                    <div class="mb-4">
+                        <label for="content" class="form-label">Workout Content</label>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <textarea class="form-control content-editor" id="content" name="content" rows="20" placeholder="Enter your workout content using Markdown"></textarea>
+                                <small class="text-muted">Edit using Markdown formatting</small>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card h-100">
+                                    <div class="card-header d-flex justify-content-between align-items-center">
+                                        <span>Preview</span>
+                                    </div>
+                                    <div class="card-body content-preview overflow-auto">
+                                        <!-- Preview will be rendered here -->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                     
                     <hr class="my-4">
                     
                     <h4>Exercises</h4>
                     <div id="exercises-container">
-                        <!-- Exercise items will be added here -->
+                        <div class="card mb-3 exercise-item">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <h5 class="card-title mb-0">Exercise #1</h5>
+                                    <button type="button" class="btn btn-sm btn-outline-danger remove-exercise-btn">
+                                        <i class="bi bi-trash"></i> Remove
+                                    </button>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Exercise Name</label>
+                                    <input type="text" class="form-control exercise-name" name="exercise_names[]" required>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Target Sets</label>
+                                        <input type="number" class="form-control" name="target_sets[]" value="7" min="1" max="10">
+                                    </div>
+                                    
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Target Reps</label>
+                                        <input type="number" class="form-control" name="target_reps[]" value="3" min="1" max="20">
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Notes</label>
+                                    <textarea class="form-control" name="exercise_notes[]" rows="2" placeholder="Any specific instructions or notes for this exercise"></textarea>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                     
                     <div class="d-flex justify-content-end mb-3">
@@ -87,11 +134,14 @@
 {% endblock %}
 
 {% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const exercisesContainer = document.getElementById('exercises-container');
     const addExerciseBtn = document.getElementById('add-exercise-btn');
     const exerciseTemplate = document.getElementById('exercise-template');
+    const contentEditor = document.getElementById('content');
+    const contentPreview = document.querySelector('.content-preview');
     
     // Add exercise button click handler
     addExerciseBtn.addEventListener('click', function() {
@@ -110,8 +160,105 @@ document.addEventListener('DOMContentLoaded', function() {
         exercisesContainer.appendChild(exerciseItem);
     }
     
-    // Add at least one exercise item by default
-    addExerciseItem();
+    // Add event listeners to existing remove buttons
+    document.querySelectorAll('.remove-exercise-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            this.closest('.exercise-item').remove();
+        });
+    });
+    
+    // Function to update the preview
+    function updatePreview() {
+        const markdownContent = contentEditor.value;
+        if (markdownContent) {
+            contentPreview.innerHTML = marked.parse(markdownContent);
+        } else {
+            contentPreview.innerHTML = '<em>Preview will appear here...</em>';
+        }
+    }
+    
+    // Initialize preview
+    updatePreview();
+    
+    // Update preview on input
+    contentEditor.addEventListener('input', updatePreview);
+    
+    // Helper function to generate markdown content from form fields
+    function generateMarkdownContent() {
+        const workoutName = document.getElementById('workout_name').value;
+        const exerciseItems = document.querySelectorAll('.exercise-item');
+        
+        // Start with the workout name as a heading
+        let content = `# ${workoutName}\n\n`;
+        
+        // Add exercises section
+        content += `## Exercises\n\n`;
+        
+        exerciseItems.forEach((item, index) => {
+            const exerciseName = item.querySelector('.exercise-name').value;
+            const targetSets = item.querySelector('input[name="target_sets[]"]').value;
+            const targetReps = item.querySelector('input[name="target_reps[]"]').value;
+            const notes = item.querySelector('textarea[name="exercise_notes[]"]').value;
+            
+            content += `### ${index + 1}. ${exerciseName}\n\n`;
+            content += `- **Sets:** ${targetSets}\n`;
+            content += `- **Reps:** ${targetReps}\n`;
+            
+            if (notes) {
+                content += `- **Notes:** ${notes}\n`;
+            }
+            
+            content += `\n`;
+        });
+        
+        return content;
+    }
+    
+    // Update content field with exercise data when form is submitted
+    document.getElementById('workoutForm').addEventListener('submit', function(e) {
+        // If the user has edited the content directly, respect their changes
+        // If they've only modified the exercise fields, update the content
+        const hasEditedContent = contentEditor.dataset.userEdited === 'true';
+        
+        if (!hasEditedContent) {
+            contentEditor.value = generateMarkdownContent();
+        }
+    });
+    
+    // Track if the user has manually edited the content
+    contentEditor.addEventListener('input', function() {
+        contentEditor.dataset.userEdited = 'true';
+    });
 });
 </script>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .content-editor {
+        min-height: 400px;
+        font-family: monospace;
+        resize: vertical;
+    }
+    
+    .content-preview {
+        min-height: 400px;
+        max-height: 600px;
+    }
+    
+    .content-preview h1, 
+    .content-preview h2, 
+    .content-preview h3 {
+        margin-top: 1rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    .content-preview ul {
+        padding-left: 20px;
+    }
+    
+    .content-preview strong {
+        font-weight: bold;
+    }
+</style>
 {% endblock %}

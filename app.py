@@ -198,28 +198,36 @@ def add_exercise_to_session(session_id):
 def add_workout():
     if request.method == 'POST':
         workout_name = request.form.get('workout_name')
-        description = request.form.get('description', '')
+        content = request.form.get('content')
         exercise_names = request.form.getlist('exercise_names[]')
+        target_sets = request.form.getlist('target_sets[]')
+        target_reps = request.form.getlist('target_reps[]')
+        exercise_notes = request.form.getlist('exercise_notes[]')
         
-        # Format exercises as a comma-separated string
-        exercises_str = ', '.join([ex.strip() for ex in exercise_names if ex.strip()])
-        
-        # Generate markdown content from exercises
-        content = f"# {workout_name}\n\n{description}\n\n## Exercises\n\n"
-        for i, exercise in enumerate(exercise_names, 1):
-            if exercise.strip():
-                content += f"### {i}. {exercise.strip()}\n\n"
+        # If content is not provided directly, generate it from the form fields
+        if not content or content.strip() == '':
+            content = f"# {workout_name}\n\n## Exercises\n\n"
+            for i, exercise in enumerate(exercise_names):
+                if exercise.strip():
+                    content += f"### {i+1}. {exercise.strip()}\n\n"
+                    if i < len(target_sets):
+                        content += f"- **Sets:** {target_sets[i]}\n"
+                    if i < len(target_reps):
+                        content += f"- **Reps:** {target_reps[i]}\n"
+                    if i < len(exercise_notes) and exercise_notes[i].strip():
+                        content += f"- **Notes:** {exercise_notes[i].strip()}\n"
+                    content += "\n"
         
         # Create new workout
         new_workout = Workout(
-            name=workout_name, 
-            description=description,
+            name=workout_name,
             content=content,
-            exercises=exercises_str
+            date_created=datetime.now()
         )
         
         db.session.add(new_workout)
         db.session.commit()
+        
         flash('Workout added successfully!', 'success')
         return redirect(url_for('index'))
     
@@ -231,34 +239,39 @@ def modify_workout(workout_id):
     
     if request.method == 'POST':
         workout_name = request.form.get('workout_name')
-        description = request.form.get('description', '')
+        content = request.form.get('content')
         exercise_names = request.form.getlist('exercise_names[]')
+        target_sets = request.form.getlist('target_sets[]')
+        target_reps = request.form.getlist('target_reps[]')
+        exercise_notes = request.form.getlist('exercise_notes[]')
         
-        # Format exercises as a comma-separated string
-        exercises_str = ', '.join([ex.strip() for ex in exercise_names if ex.strip()])
-        
-        # Generate markdown content from exercises
-        content = f"# {workout_name}\n\n{description}\n\n## Exercises\n\n"
-        for i, exercise in enumerate(exercise_names, 1):
-            if exercise.strip():
-                content += f"### {i}. {exercise.strip()}\n\n"
+        # If content is not provided directly, generate it from the form fields
+        if not content or content.strip() == '':
+            content = f"# {workout_name}\n\n## Exercises\n\n"
+            for i, exercise in enumerate(exercise_names):
+                if exercise.strip():
+                    content += f"### {i+1}. {exercise.strip()}\n\n"
+                    if i < len(target_sets):
+                        content += f"- **Sets:** {target_sets[i]}\n"
+                    if i < len(target_reps):
+                        content += f"- **Reps:** {target_reps[i]}\n"
+                    if i < len(exercise_notes) and exercise_notes[i].strip():
+                        content += f"- **Notes:** {exercise_notes[i].strip()}\n"
+                    content += "\n"
         
         # Update workout details
         workout.name = workout_name
-        workout.description = description
         workout.content = content
-        workout.exercises = exercises_str
         
+        # Save to database
         db.session.commit()
+        
         flash('Workout updated successfully!', 'success')
-        return redirect(url_for('index'))
+        return redirect(url_for('view_workout', workout_id=workout.id))
     
-    # Get exercises for this workout
+    # Extract exercise names from content for display in the form
     exercises = []
-    if workout.exercises:
-        exercises = workout.exercises.split(', ')
-    else:
-        # Parse from content for backward compatibility
+    if workout.content:
         import re
         exercises = re.findall(r'### \d+\.\s+(.*?)$', workout.content, re.MULTILINE)
     
