@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+
+{% block title %}Session Details - Workout Tracker{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>Session Details</h1>
+            <a href="{{ url_for('history') }}" class="btn btn-outline-secondary">Back to History</a>
+        </div>
+        
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h3 class="mb-0">{{ session.workout.name }}</h3>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>Date:</strong> {{ session.date.strftime('%B %d, %Y') }}</p>
+                        <p><strong>Time:</strong> {{ session.date.strftime('%I:%M %p') }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Exercises Completed:</strong> {{ session.completed_exercises|length }}</p>
+                        {% if session.notes %}
+                        <p><strong>Session Notes:</strong> {{ session.notes }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <h2>Completed Exercises</h2>
+        
+        {% if session.completed_exercises %}
+            <div class="row">
+                {% for exercise in session.completed_exercises %}
+                <div class="col-md-6 mb-4">
+                    <div class="card exercise-container">
+                        <div class="card-body">
+                            <h4 class="card-title">{{ exercise.exercise_name }}</h4>
+                            <div class="row">
+                                <div class="col-6">
+                                    <p><strong>Sets Completed:</strong> {{ exercise.sets_completed }}</p>
+                                </div>
+                                <div class="col-6">
+                                    {% if exercise.weight %}
+                                    <p><strong>Weight Used:</strong> {{ exercise.weight }} kg</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% if exercise.notes %}
+                            <div class="mt-3">
+                                <h5>Notes:</h5>
+                                <p>{{ exercise.notes }}</p>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="alert alert-info">
+                No exercises were recorded for this session.
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

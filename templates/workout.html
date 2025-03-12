@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ workout.name }} - Workout Tracker{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>{{ workout.name }}</h1>
+            <a href="{{ url_for('start_session') }}?workout_id={{ workout.id }}" class="btn btn-primary">Start This Workout</a>
+        </div>
+        
+        <div class="card">
+            <div class="card-body">
+                <div class="workout-content">
+                    {{ html_content|safe }}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .workout-content {
+        font-size: 1.1rem;
+        line-height: 1.6;
+    }
+    .workout-content h1, 
+    .workout-content h2, 
+    .workout-content h3 {
+        margin-top: 1.5rem;
+        margin-bottom: 1rem;
+    }
+    .workout-content h3 {
+        color: #0d6efd;
+    }
+    .workout-content ul {
+        padding-left: 1.5rem;
+    }
+    .workout-content p {
+        margin-bottom: 1rem;
+    }
+    .workout-content strong {
+        font-weight: 600;
+    }
+</style>
+{% endblock %}

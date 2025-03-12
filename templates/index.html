@@ -1,0 +1,65 @@
+{% extends 'base.html' %}
+
+{% block title %}Home - Workout Tracker{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12 mb-4">
+        <div class="jumbotron bg-light p-5 rounded">
+            <h1 class="display-4">Welcome to Your Workout Tracker</h1>
+            <p class="lead">Access your workout routines and track your gym progress all in one place.</p>
+            <hr class="my-4">
+            <p>Ready to start your workout? Click the button below to begin tracking your session.</p>
+            <a class="btn btn-primary btn-lg" href="{{ url_for('start_session') }}" role="button">Start Workout</a>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <h2>Your Workouts</h2>
+        <div class="row">
+            {% for workout in workouts %}
+            <div class="col-md-12">
+                <div class="card workout-card">
+                    <div class="card-body">
+                        <h5 class="card-title">{{ workout.name }}</h5>
+                        <p class="card-text">3/7 Method training routine</p>
+                        <a href="{{ url_for('view_workout', workout_id=workout.id) }}" class="btn btn-outline-primary">View Workout</a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <h2>Recent Sessions</h2>
+        {% if recent_sessions %}
+            {% for session in recent_sessions %}
+            <div class="card mb-3 session-card">
+                <div class="card-body">
+                    <h5 class="card-title">{{ session.workout.name }}</h5>
+                    <h6 class="card-subtitle mb-2 text-muted">{{ session.date.strftime('%B %d, %Y at %I:%M %p') }}</h6>
+                    <p class="card-text">
+                        <strong>Exercises completed:</strong> {{ session.completed_exercises|length }}
+                    </p>
+                    <a href="{{ url_for('view_session', session_id=session.id) }}" class="btn btn-sm btn-outline-secondary">View Details</a>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="alert alert-info">
+                You haven't recorded any workout sessions yet. 
+                <a href="{{ url_for('start_session') }}">Start your first workout!</a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Add any JavaScript for the home page here
+</script>
+{% endblock %}

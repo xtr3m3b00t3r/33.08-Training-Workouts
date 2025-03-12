@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+
+{% block title %}Start Workout - Workout Tracker{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 offset-md-2">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h2 class="mb-0">Start New Workout Session</h2>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('start_session') }}">
+                    <div class="mb-3">
+                        <label for="workout_id" class="form-label">Select Workout</label>
+                        <select class="form-select" id="workout_id" name="workout_id" required>
+                            <option value="" selected disabled>Choose a workout...</option>
+                            {% for workout in workouts %}
+                            <option value="{{ workout.id }}" {% if request.args.get('workout_id')|int == workout.id %}selected{% endif %}>
+                                {{ workout.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="notes" class="form-label">Session Notes (Optional)</label>
+                        <textarea class="form-control" id="notes" name="notes" rows="3" placeholder="How are you feeling today? Any specific goals for this session?"></textarea>
+                    </div>
+                    
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary btn-lg">Start Session</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,126 @@
+{% extends 'base.html' %}
+
+{% block title %}Workout History - Workout Tracker{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <h1 class="mb-4">Your Workout History</h1>
+        
+        {% if sessions %}
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="mb-0">All Sessions</h3>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Workout</th>
+                                    <th>Exercises</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for session in sessions %}
+                                <tr>
+                                    <td>{{ session.date.strftime('%B %d, %Y') }}<br>
+                                        <small class="text-muted">{{ session.date.strftime('%I:%M %p') }}</small>
+                                    </td>
+                                    <td>{{ session.workout.name }}</td>
+                                    <td>{{ session.completed_exercises|length }} exercises</td>
+                                    <td>
+                                        <a href="{{ url_for('view_session', session_id=session.id) }}" class="btn btn-sm btn-outline-primary">View Details</a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="card">
+                        <div class="card-header bg-secondary text-white">
+                            <h3 class="mb-0">Workout Frequency</h3>
+                        </div>
+                        <div class="card-body">
+                            <canvas id="workoutFrequencyChart" class="progress-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% else %}
+            <div class="alert alert-info">
+                You haven't recorded any workout sessions yet. 
+                <a href="{{ url_for('start_session') }}">Start your first workout!</a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{% if sessions %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Prepare data for workout frequency chart
+        const sessions = [
+            {% for session in sessions %}
+                {
+                    date: '{{ session.date.strftime("%Y-%m-%d") }}',
+                    workout: '{{ session.workout.name }}'
+                },
+            {% endfor %}
+        ];
+        
+        // Group sessions by month
+        const monthlyData = {};
+        sessions.forEach(session => {
+            const month = session.date.substring(0, 7); // YYYY-MM format
+            if (!monthlyData[month]) {
+                monthlyData[month] = 0;
+            }
+            monthlyData[month]++;
+        });
+        
+        // Sort months chronologically
+        const sortedMonths = Object.keys(monthlyData).sort();
+        
+        // Create chart
+        const ctx = document.getElementById('workoutFrequencyChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: sortedMonths.map(month => {
+                    const date = new Date(month + '-01');
+                    return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+                }),
+                datasets: [{
+                    label: 'Number of Workouts',
+                    data: sortedMonths.map(month => monthlyData[month]),
+                    backgroundColor: 'rgba(54, 162, 235, 0.7)',
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1
+                        }
+                    }
+                }
+            }
+        });
+    });
+</script>
+{% endif %}
+{% endblock %}
