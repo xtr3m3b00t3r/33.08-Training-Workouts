@@ -1,10 +1,10 @@
-# Workout Tracker
+# Iron Ledger
 
-A web application for tracking workout routines and gym sessions with comprehensive exercise details.
+A modern web application for tracking workout routines and gym sessions with comprehensive exercise details.
 
 ## Overview
 
-Workout Tracker is a Flask-based web application that allows users to:
+Iron Ledger is a Flask-based web application that allows users to:
 - Create and access workout routines online
 - Track gym sessions and exercises with detailed information
 - Monitor progress over time
@@ -90,7 +90,7 @@ This application uses Flask-BasicAuth to protect all routes with password authen
 
 ## Exercise Details
 
-The application now supports tracking these details for each exercise:
+The application supports tracking these details for each exercise:
 
 - **Exercise Name**: The name of the exercise
 - **Machine Weight**: Weight used on machine-based exercises
@@ -110,11 +110,11 @@ The application now supports tracking these details for each exercise:
 
 ## Future Enhancements
 
-- User authentication
-- Custom workout creation
 - Advanced progress analytics
 - Export data functionality
 - Mobile app integration
+- Custom workout creation
+- Advanced progress tracking
 
 ## License
 

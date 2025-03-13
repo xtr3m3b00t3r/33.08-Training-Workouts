@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 
-{% block title %}Track Workout - Workout Tracker{% endblock %}
+{% block title %}Track Workout - Iron Ledger{% endblock %}
 
 {% block content %}
 <div class="row">
@@ -29,14 +29,34 @@
                                 </select>
                             </div>
                             
-                            <div class="mb-3">
-                                <label for="sets_completed" class="form-label">Sets Completed</label>
-                                <input type="number" class="form-control" id="sets_completed" name="sets_completed" value="7" min="1" max="10" required>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="sets_completed" class="form-label">Sets Completed</label>
+                                        <input type="number" class="form-control" id="sets_completed" name="sets_completed" value="7" min="1" max="10" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="previous_sets" class="form-label">Sets completed last time</label>
+                                        <input type="text" class="form-control" id="previous_sets" readonly>
+                                    </div>
+                                </div>
                             </div>
                             
-                            <div class="mb-3">
-                                <label for="weight" class="form-label">Weight Used (kg)</label>
-                                <input type="number" step="0.5" class="form-control" id="weight" name="weight" placeholder="Enter weight in kg">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="weight" class="form-label">Weight Used (kg)</label>
+                                        <input type="number" step="0.5" class="form-control" id="weight" name="weight" placeholder="Enter weight in kg">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="previous_weight" class="form-label">Previously Used (kg)</label>
+                                        <input type="text" class="form-control" id="previous_weight" readonly>
+                                    </div>
+                                </div>
                             </div>
                             
                             <div class="mb-3">
@@ -93,11 +113,14 @@
 {% block scripts %}
 <script>
     document.addEventListener('DOMContentLoaded', function() {
+        const exerciseSelect = document.getElementById('exercise_name');
+        const previousWeightField = document.getElementById('previous_weight');
+        const previousSetsField = document.getElementById('previous_sets');
+        
         // Fetch exercises for the current workout
         fetch('/api/exercises/{{ session.workout_id }}')
             .then(response => response.json())
             .then(exercises => {
-                const exerciseSelect = document.getElementById('exercise_name');
                 exercises.forEach(exercise => {
                     const option = document.createElement('option');
                     option.value = exercise;
@@ -106,6 +129,34 @@
                 });
             })
             .catch(error => console.error('Error fetching exercises:', error));
+        
+        // Add event listener to fetch previous exercise data when an exercise is selected
+        exerciseSelect.addEventListener('change', function() {
+            const selectedExercise = this.value;
+            if (!selectedExercise) return;
+            
+            // Reset fields
+            previousWeightField.value = '';
+            previousSetsField.value = '';
+            
+            // Fetch previous data for this exercise
+            fetch(`/api/previous_exercise/${encodeURIComponent(selectedExercise)}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        previousWeightField.value = data.previous_weight !== null ? `${data.previous_weight} kg` : 'No weight recorded';
+                        previousSetsField.value = data.previous_sets || 'N/A';
+                    } else {
+                        previousWeightField.value = 'No previous data';
+                        previousSetsField.value = 'No previous data';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching previous exercise data:', error);
+                    previousWeightField.value = 'Error loading data';
+                    previousSetsField.value = 'Error loading data';
+                });
+        });
     });
 </script>
 {% endblock %}

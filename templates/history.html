@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 
-{% block title %}Workout History - Workout Tracker{% endblock %}
+{% block title %}Workout History - Iron Ledger{% endblock %}
 
 {% block content %}
 <div class="row">
@@ -91,51 +91,58 @@
         // Setup delete confirmation modal
         const deleteModal = new bootstrap.Modal(document.getElementById('deleteConfirmModal'));
         const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
-        
-        // Add click handlers to all delete buttons
+        let sessionToDelete = null;
+
+        // Handle delete button clicks
         document.querySelectorAll('.delete-session-btn').forEach(button => {
             button.addEventListener('click', function() {
-                const sessionId = this.getAttribute('data-session-id');
-                confirmDeleteBtn.href = `/delete_session/${sessionId}`;
+                sessionToDelete = this.getAttribute('data-session-id');
                 deleteModal.show();
             });
         });
-        
+
+        // Handle delete confirmation
+        confirmDeleteBtn.addEventListener('click', function() {
+            if (sessionToDelete) {
+                window.location.href = `/delete_session/${sessionToDelete}`;
+            }
+        });
+
         // Prepare data for workout frequency chart
         const sessions = [
             {% for session in sessions %}
                 {
-                    date: '{{ session.date.strftime("%Y-%m-%d") }}',
-                    workout: '{{ session.workout.name }}'
-                },
+                    date: "{{ session.date.strftime('%Y-%m-%d') }}",
+                    workout: "{{ session.workout.name }}"
+                }{% if not loop.last %},{% endif %}
             {% endfor %}
         ];
-        
+
         // Group sessions by month
         const monthlyData = {};
-        sessions.forEach(session => {
+        sessions.forEach(function(session) {
             const month = session.date.substring(0, 7); // YYYY-MM format
             if (!monthlyData[month]) {
                 monthlyData[month] = 0;
             }
-            monthlyData[month]++;
+            monthlyData[month] += 1;
         });
-        
+
         // Sort months chronologically
         const sortedMonths = Object.keys(monthlyData).sort();
-        
+
         // Create chart
         const ctx = document.getElementById('workoutFrequencyChart').getContext('2d');
         new Chart(ctx, {
             type: 'bar',
             data: {
-                labels: sortedMonths.map(month => {
+                labels: sortedMonths.map(function(month) {
                     const date = new Date(month + '-01');
                     return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
                 }),
                 datasets: [{
                     label: 'Number of Workouts',
-                    data: sortedMonths.map(month => monthlyData[month]),
+                    data: sortedMonths.map(function(month) { return monthlyData[month]; }),
                     backgroundColor: 'rgba(54, 162, 235, 0.7)',
                     borderColor: 'rgba(54, 162, 235, 1)',
                     borderWidth: 1

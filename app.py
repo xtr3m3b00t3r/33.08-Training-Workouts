@@ -331,6 +331,27 @@ def modify_workout(workout_id):
     
     return render_template('modify_workout.html', workout=workout, exercises=exercises)
 
+@app.route('/api/previous_exercise/<exercise_name>')
+def get_previous_exercise_data(exercise_name):
+    """
+    Get the most recent data for a specific exercise across all workouts
+    to show previous weight and sets completed.
+    """
+    previous_exercise = CompletedExercise.query.filter_by(exercise_name=exercise_name)\
+        .order_by(CompletedExercise.id.desc()).first()
+    
+    if previous_exercise:
+        return jsonify({
+            "success": True,
+            "previous_weight": previous_exercise.weight,
+            "previous_sets": previous_exercise.sets_completed
+        })
+    else:
+        return jsonify({
+            "success": False,
+            "message": "No previous data found for this exercise"
+        })
+
 # Initialize the database and load workout data
 def init_db():
     with app.app_context():
