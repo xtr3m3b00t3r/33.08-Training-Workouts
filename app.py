@@ -4,6 +4,7 @@ from flask import Flask, render_template, request, redirect, url_for, flash, jso
 from flask_sqlalchemy import SQLAlchemy
 import markdown
 from dotenv import load_dotenv
+from flask_basicauth import BasicAuth
 
 # Load environment variables
 load_dotenv()
@@ -12,6 +13,13 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-key-for-testing')
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///workouts.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+# Basic Auth Configuration
+app.config['BASIC_AUTH_USERNAME'] = os.environ.get('BASIC_AUTH_USERNAME', 'admin')
+app.config['BASIC_AUTH_PASSWORD'] = os.environ.get('BASIC_AUTH_PASSWORD', 'password')
+app.config['BASIC_AUTH_FORCE'] = True  # Protect the entire app
+
+basic_auth = BasicAuth(app)
 
 db = SQLAlchemy(app)
 
