@@ -30,6 +30,7 @@ The application supports various training methodologies, including the 3/7 Metho
 - **Session Tracking**: Record which exercises you complete during each gym session
 - **Progress Monitoring**: View your workout history and track consistency
 - **Responsive Design**: Works on both desktop and mobile devices
+- **Authentication**: Basic authentication to protect your workout data
 
 ## Installation
 
@@ -46,11 +47,35 @@ The application supports various training methodologies, including the 3/7 Metho
    ```
    pip install -r requirements.txt
    ```
-5. Run the application:
+5. Create a `.env` file in the root directory with the following content:
+   ```
+   SECRET_KEY=your-secret-key-here
+   DATABASE_URL=sqlite:///workouts.db
+   BASIC_AUTH_USERNAME=your_username
+   BASIC_AUTH_PASSWORD=your_secure_password
+   ```
+6. Run the application:
    ```
    python app.py
    ```
-6. Access the application at http://127.0.0.1:5000
+7. Access the application at http://127.0.0.1:5000
+
+## Authentication
+
+This application uses Flask-BasicAuth to protect all routes with password authentication:
+
+1. **Setting Credentials**: 
+   - Create a `.env` file as described in the installation section
+   - Set your desired username and password using the `BASIC_AUTH_USERNAME` and `BASIC_AUTH_PASSWORD` variables
+   - **Important**: Never commit your `.env` file to version control
+
+2. **Accessing the Application**:
+   - When you visit the application, you'll be prompted for the username and password
+   - Enter the credentials you set in the `.env` file
+
+3. **Changing Credentials**:
+   - To change your username or password, update the values in the `.env` file
+   - Restart the application for changes to take effect
 
 ## Usage
 
