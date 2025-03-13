@@ -352,6 +352,38 @@ def get_previous_exercise_data(exercise_name):
             "message": "No previous data found for this exercise"
         })
 
+@app.route('/api/calendar_data')
+def get_calendar_data():
+    """
+    Get workout session data formatted for calendar display.
+    Returns details about each session including date, duration, and exercises.
+    """
+    sessions = Session.query.order_by(Session.date).all()
+    calendar_data = []
+    
+    for session in sessions:
+        # Calculate approximate duration (simplified for demo)
+        exercise_count = len(session.completed_exercises)
+        # Estimate 10 minutes per exercise as a placeholder
+        duration_minutes = exercise_count * 10 if exercise_count > 0 else 30
+        
+        # Format the session for the calendar
+        calendar_event = {
+            'id': session.id,
+            'title': session.workout.name,
+            'start': session.date.isoformat(),
+            'end': (session.date + datetime.timedelta(minutes=duration_minutes)).isoformat(),
+            'url': url_for('view_session', session_id=session.id),
+            'extendedProps': {
+                'exercise_count': exercise_count,
+                'duration_minutes': duration_minutes,
+                'time_attended': session.date.strftime('%I:%M %p')
+            }
+        }
+        calendar_data.append(calendar_event)
+    
+    return jsonify(calendar_data)
+
 # Initialize the database and load workout data
 def init_db():
     with app.app_context():

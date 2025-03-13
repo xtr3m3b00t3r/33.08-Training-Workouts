@@ -46,11 +46,16 @@
             <div class="row">
                 <div class="col-md-12">
                     <div class="card">
-                        <div class="card-header bg-secondary text-white">
-                            <h3 class="mb-0">Workout Frequency</h3>
+                        <div class="card-header bg-secondary text-white d-flex justify-content-between align-items-center">
+                            <h3 class="mb-0">Workout Calendar</h3>
+                            <div>
+                                <button id="prev-month" class="btn btn-sm btn-outline-light">Previous</button>
+                                <button id="today-btn" class="btn btn-sm btn-light mx-2">Today</button>
+                                <button id="next-month" class="btn btn-sm btn-outline-light">Next</button>
+                            </div>
                         </div>
                         <div class="card-body">
-                            <canvas id="workoutFrequencyChart" class="progress-chart"></canvas>
+                            <div id="workoutCalendar" style="height: 650px;"></div>
                         </div>
                     </div>
                 </div>
@@ -86,6 +91,10 @@
 
 {% block scripts %}
 {% if sessions %}
+<!-- Include FullCalendar library -->
+<link href="https://cdn.jsdelivr.net/npm/fullcalendar@5.10.1/main.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.10.1/main.min.js"></script>
+
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         // Setup delete confirmation modal
@@ -108,59 +117,98 @@
             }
         });
 
-        // Prepare data for workout frequency chart
-        const sessions = [
-            {% for session in sessions %}
-                {
-                    date: "{{ session.date.strftime('%Y-%m-%d') }}",
-                    workout: "{{ session.workout.name }}"
-                }{% if not loop.last %},{% endif %}
-            {% endfor %}
-        ];
-
-        // Group sessions by month
-        const monthlyData = {};
-        sessions.forEach(function(session) {
-            const month = session.date.substring(0, 7); // YYYY-MM format
-            if (!monthlyData[month]) {
-                monthlyData[month] = 0;
-            }
-            monthlyData[month] += 1;
-        });
-
-        // Sort months chronologically
-        const sortedMonths = Object.keys(monthlyData).sort();
-
-        // Create chart
-        const ctx = document.getElementById('workoutFrequencyChart').getContext('2d');
-        new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: sortedMonths.map(function(month) {
-                    const date = new Date(month + '-01');
-                    return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-                }),
-                datasets: [{
-                    label: 'Number of Workouts',
-                    data: sortedMonths.map(function(month) { return monthlyData[month]; }),
-                    backgroundColor: 'rgba(54, 162, 235, 0.7)',
-                    borderColor: 'rgba(54, 162, 235, 1)',
-                    borderWidth: 1
-                }]
+        // Initialize FullCalendar
+        const calendarEl = document.getElementById('workoutCalendar');
+        const calendar = new FullCalendar.Calendar(calendarEl, {
+            initialView: 'dayGridMonth',
+            headerToolbar: {
+                left: '',
+                center: 'title',
+                right: ''
             },
-            options: {
-                responsive: true,
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            stepSize: 1
-                        }
-                    }
-                }
+            height: '100%',
+            eventTimeFormat: {
+                hour: 'numeric',
+                minute: '2-digit',
+                meridiem: 'short'
+            },
+            eventDisplay: 'block',
+            eventColor: '#3788d8',
+            eventClick: function(info) {
+                // Navigate to session details when clicked
+                window.location.href = info.event.url;
+            },
+            eventDidMount: function(info) {
+                // Add tooltip with session details
+                const extProps = info.event.extendedProps;
+                const contentHtml = `
+                    <strong>${info.event.title}</strong><br>
+                    <strong>Time:</strong> ${extProps.time_attended}<br>
+                    <strong>Duration:</strong> ${extProps.duration_minutes} minutes<br>
+                    <strong>Exercises:</strong> ${extProps.exercise_count}
+                `;
+                
+                // Use Bootstrap tooltip
+                tippy(info.el, {
+                    content: contentHtml,
+                    allowHTML: true,
+                    placement: 'top',
+                    arrow: true,
+                    theme: 'light-border'
+                });
             }
+        });
+        
+        // Fetch calendar data from API
+        fetch('/api/calendar_data')
+            .then(response => response.json())
+            .then(data => {
+                calendar.addEventSource(data);
+                calendar.render();
+            })
+            .catch(error => console.error('Error fetching calendar data:', error));
+        
+        // Navigation buttons
+        document.getElementById('prev-month').addEventListener('click', function() {
+            calendar.prev();
+        });
+        
+        document.getElementById('next-month').addEventListener('click', function() {
+            calendar.next();
+        });
+        
+        document.getElementById('today-btn').addEventListener('click', function() {
+            calendar.today();
         });
     });
 </script>
+
+<!-- Include Tippy.js for tooltips -->
+<script src="https://unpkg.com/@popperjs/core@2"></script>
+<script src="https://unpkg.com/tippy.js@6"></script>
+
+<style>
+    /* Calendar styling */
+    .fc-daygrid-day.fc-day-has-event {
+        background-color: rgba(54, 162, 235, 0.1);
+    }
+    
+    .fc-event {
+        cursor: pointer;
+        border-radius: 4px;
+    }
+    
+    .fc-event-time {
+        font-weight: bold;
+    }
+    
+    /* Tooltip styling */
+    .tippy-box[data-theme~='light-border'] {
+        background-color: white;
+        border: 1px solid #ddd;
+        color: #333;
+        box-shadow: 0 4px 14px -2px rgba(0, 0, 0, 0.1);
+    }
+</style>
 {% endif %}
 {% endblock %}
